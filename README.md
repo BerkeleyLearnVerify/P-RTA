@@ -4,7 +4,7 @@ P-RTA is a framework for programming safe cyber-physical systems (CPS). This rep
 
 ## Installation
 
-### 1. Clone the repo
+### 1. Clone the repository
 
 ```
 git clone https://github.com/BerkeleyLearnVerify/P-RTA.git
@@ -12,24 +12,23 @@ cd P-RTA
 git submodule update --init --recursive
 ```
 
-### 2. Build extended P compiler
+### 2. Build extended P compiler and backend
 
-Install [.Net SDK 3.1.](https://dotnet.microsoft.com/download/dotnet/3.1)
+First, install [.Net SDK 3.1](https://dotnet.microsoft.com/download/dotnet/3.1) and Java Runtime. Then build P compiler as follows.
 
 ```
 cd P/Bld
 ./build.sh
 ```
 
-After a successful build, add printed lines to your `bash_profile`.
+After a successful build, add printed aliases to your `bash_profile`. Build backend as follows.
 
-### 3. Build extended P backend
 
 ```
 ./build-c-runtime.sh
 ```
 
-### 4. Build Reelay
+### 3. Build Reelay
 
 Build Reelay C++ library as instructed in this [link](https://github.com/doganulus/reelay/blob/master/docs/install.md).
 
@@ -37,7 +36,7 @@ Build Reelay C++ library as instructed in this [link](https://github.com/doganul
 
 To run the case studies, you need to complete all steps listed above and install the [Webots](https://cyberbotics.com/) simulator. Additionally, you may need to change some lines in the `CMakeLists.txt` files in controller directories. Further instructions are given in the `CMakeLists.txt` files.
 
-### 1. Case Study: Robot Surveillance Task
+### 1. Case Study: Robot Surveillance System
 
 Compile the P-RTA program for the robot.
 ```
@@ -51,7 +50,7 @@ Then open the world file `examples/example1/example1.wbt` in the Webots simulato
 
 Video available at [https://www.youtube.com/watch?v=-GzR69ljTU0](https://www.youtube.com/watch?v=-GzR69ljTU0)
 
-### 2. Case Study: A More Complex Robot Surveillance Task
+### 2. Case Study: Complex Robot Surveillance System
 
 Compile the P-RTA program for slave robots.
 
