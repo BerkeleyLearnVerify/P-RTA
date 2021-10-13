@@ -409,11 +409,6 @@ machine PlanExecutor {
     var ds: seq[float];
     var robot: machine;
 
-    fun printStats() {
-        print(format("Run: {0} {1} {2}\n", advancedMotionControllerCount, safeMotionControllerCount, collisionAvoidanceControllerCount));
-        print(format("LowBatteryRun: {0} {1} {2}\n", advancedMotionControllerLowBatteryCount, safeMotionControllerLowBatteryCount, collisionAvoidanceControllerLowBatteryCount));
-    }
-
     fun updateMonitors() {
         var temp: bool;
         temp = IsInTrajectory(currentLocation.0, currentLocation.1, currentMotion.0, currentMotion.1, trajectoryDeviationThreshold);
@@ -473,7 +468,6 @@ machine PlanExecutor {
             if (CheckIfReached(currentMotion.0, currentMotion.1, 1.0)) {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
-                printStats();
                 send robot, eCurrentLocation, currentLocation;
             }
             advancedMotionControllerCount = advancedMotionControllerCount + 1;
@@ -483,7 +477,6 @@ machine PlanExecutor {
             if (CheckIfReached(currentMotion.0, currentMotion.1, 1.0)) {
                 currentLocation = currentMotion;
                 currentMotionIndex = currentMotionIndex + 1;
-                printStats();
                 send robot, eCurrentLocation, currentLocation;
             }
             advancedMotionControllerCount = advancedMotionControllerCount + 1;
@@ -507,7 +500,6 @@ machine PlanExecutor {
             if (CheckIfReached(currentMotion.0, currentMotion.1, speedMultiplier)) {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
-                printStats();
                 send robot, eCurrentLocation, currentLocation;
             }
             safeMotionControllerCount = safeMotionControllerCount + 1;
@@ -519,7 +511,6 @@ machine PlanExecutor {
             if (CheckIfReached(currentMotion.0, currentMotion.1, speedMultiplier)) {
                 currentLocation = currentMotion;
                 currentMotionIndex = currentMotionIndex + 1;
-                printStats();
                 send robot, eCurrentLocation, currentLocation;
             }
             safeMotionControllerCount = safeMotionControllerCount + 1;
@@ -572,7 +563,6 @@ machine PlanExecutor {
             if (CheckIfReached(currentMotion.0, currentMotion.1, 1.0)) {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
-                printStats();
                 send robot, eCurrentLocation, currentLocation;
             }
             advancedMotionControllerLowBatteryCount = advancedMotionControllerLowBatteryCount + 1;
@@ -596,7 +586,6 @@ machine PlanExecutor {
             if (CheckIfReached(currentMotion.0, currentMotion.1, speedMultiplier)) {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
-                printStats();
                 send robot, eCurrentLocation, currentLocation;
             }
             safeMotionControllerLowBatteryCount = safeMotionControllerLowBatteryCount + 1;
