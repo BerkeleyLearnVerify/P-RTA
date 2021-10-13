@@ -75,3 +75,11 @@ make
 Then open the world file `examples/example2/example2.wbt` in the Webots simulator.
 
 Video available at [https://www.youtube.com/watch?v=B5AZ5Web-wc](https://www.youtube.com/watch?v=B5AZ5Web-wc)
+
+## Writing and Executing P-RTA Programs
+
+P-RTA builts on top of the P syntax. For details of the P syntax, see this [link](https://p-org.github.io/P/). The P-RTA syntax is given in the paper (under submission). For a quick review, you can check the case studies. P-RTA programs uses the same file extension as the P programs, i.e., `.p`. To compile P-RTA programs, we recommend using `CMakeLists.txt` files similar to ones given in the case studies. To run P-RTA programs, you need to provide a main function that starts the program with a number of worker threads, for details see `Main.cpp` files in the case studies.
+
+## Syntax Highlighting in Sublime
+
+In Sublime, click on `Preferences > Browse pages` and then copy `p-rta.tmLanguage` file the `Packages` folder. After this, you can select P-RTA from the syntax highlighting menu of Sublime.
