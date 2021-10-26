@@ -20,6 +20,9 @@ fun CheckReelayMonitor(id: int): bool;
 fun IsInTrajectory(x0: float, z0: float, x1:float, z1:float, trajectoryDeviationThreshold: float): bool;
 fun RandomController(isLowBattery: bool): int;
 
+fun GetRobotPosition(): seq[float];
+fun GetChargerPosition(): seq[float];
+
 type locationType = (float, float);
 
 event eMotionPlan: (machine, locationType, locationType);
@@ -40,10 +43,16 @@ machine Robot {
     var goals: seq[locationType];
     var currentGoalIndex: int;
     var currentLocation: locationType;
+    var chargerLocation: locationType;
+    var temp: seq[float];
 
     fun DM(): string {
-        if (currentLocation == goals[currentGoalIndex] && currentGoalIndex + 1 < sizeof(goals)) {
-            currentGoalIndex = currentGoalIndex + 1;
+        if (currentLocation == goals[currentGoalIndex]) {
+            if (currentGoalIndex + 1 < sizeof(goals)) {
+                currentGoalIndex = currentGoalIndex + 1;
+            } else {
+                currentGoalIndex = 0;
+            }
             return "SC";
         }
         return "AC";
@@ -64,16 +73,18 @@ machine Robot {
 
     start state Init {
         entry {
-            currentLocation = (0.0, 0.0);
             Init();
+            temp = GetRobotPosition();
+            currentLocation = (temp[0], temp[1]);
+            temp = GetChargerPosition();
+            chargerLocation = (temp[0], temp[1]);
             motionPlanner = new MotionPlanner();
             motionPrimitives = new MotionPrimitives(this, currentLocation, 0.1, 300.0);
-            battery = new Battery(motionPrimitives, motionPlanner, (0.0, 0.0), 50.0, 200.0);
+            battery = new Battery(motionPrimitives, motionPlanner, chargerLocation, 50.0, 200.0);
             goals += (sizeof(goals), (0.5, 0.5));
             goals += (sizeof(goals), (-0.5, 0.5));
             goals += (sizeof(goals), (-0.5, -0.5));
             goals += (sizeof(goals), (0.5, -0.5));
-            goals += (sizeof(goals), (0.5, 0.5));
             currentGoalIndex = 0;
             send motionPlanner, eMotionPlan, (motionPrimitives, currentLocation, goals[currentGoalIndex]);
             Print("Untrusted Controller", 0);
@@ -171,6 +182,11 @@ machine MotionPrimitives {
     var safeMotionControllerLowBatteryCount: int;
     var robot: machine;
 
+    fun printStats() {
+        print(format("Run: {0} {1}\n", advancedMotionControllerCount, safeMotionControllerCount));
+        print(format("LowBatteryRun: {0} {1}\n", advancedMotionControllerLowBatteryCount, safeMotionControllerLowBatteryCount));
+    }
+
     fun updateMonitors() {
         var temp: bool;
         temp = IsInTrajectory(currentLocation.0, currentLocation.1, currentMotion.0, currentMotion.1, trajectoryDeviationThreshold);
@@ -202,6 +218,7 @@ machine MotionPrimitives {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             advancedMotionControllerCount = advancedMotionControllerCount + 1;
         } else if (currentMotionIndex < sizeof(motions)) {
@@ -211,6 +228,7 @@ machine MotionPrimitives {
                 currentLocation = currentMotion;
                 currentMotionIndex = currentMotionIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             advancedMotionControllerCount = advancedMotionControllerCount + 1;
         } else {
@@ -234,6 +252,7 @@ machine MotionPrimitives {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             safeMotionControllerCount = safeMotionControllerCount + 1;
         } else if (currentMotionIndex < sizeof(motions)) {
@@ -245,6 +264,7 @@ machine MotionPrimitives {
                 currentLocation = currentMotion;
                 currentMotionIndex = currentMotionIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             safeMotionControllerCount = safeMotionControllerCount + 1;
         } else {
@@ -272,6 +292,7 @@ machine MotionPrimitives {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             advancedMotionControllerLowBatteryCount = advancedMotionControllerLowBatteryCount + 1;
         } else {
@@ -295,6 +316,7 @@ machine MotionPrimitives {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             safeMotionControllerLowBatteryCount = safeMotionControllerLowBatteryCount + 1;
         } else {
@@ -363,15 +385,16 @@ machine Battery {
     var batteryLevelUpperBound: float;
     var monitor1Id: int;
     var monitor2Id: int;
+    var isBatteryLow: bool;
 
     fun DM(): string {
         var monitorStatus: bool;
         monitorStatus = CheckReelayMonitor(monitor1Id);
-        if (monitorStatus) {
+        if (!isBatteryLow && monitorStatus) {
             return "HandleLowBattery";
         }
         monitorStatus = CheckReelayMonitor(monitor2Id);
-        if (monitorStatus) {
+        if (isBatteryLow && monitorStatus) {
             return "NotifyRecovery";
         }
         return "Idle";
@@ -390,12 +413,14 @@ machine Battery {
 
     fun HandleLowBattery() {
         Print("Trusted Controller Low Battery", 3);
+        isBatteryLow = true;
         send destination, eBatteryLow, this;
         updateMonitors();
     }
 
     fun NotifyRecovery() {
         Print("Trusted Controller Battery Recovered", 3);
+        isBatteryLow = false;
         send destination, eBatteryRecovered, this;
         updateMonitors();
     }
@@ -407,6 +432,7 @@ machine Battery {
             chargerLocation = payload.2;
             batteryLevelLowerBound= payload.3;
             batteryLevelUpperBound= payload.4;
+            isBatteryLow = false;
             monitor1Id = InitDiscreteReelayMonitor(format("pre{{batteryLevel > {0}}} and {{batteryLevel <= {0}}}", batteryLevelLowerBound));
             monitor2Id = InitDiscreteReelayMonitor(format("pre{{batteryLevel <= {0}}} and {{batteryLevel > {0}}}", batteryLevelUpperBound));
             goto Run;

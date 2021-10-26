@@ -20,11 +20,16 @@ WbDeviceTag right_motor, left_motor, gps, compass, ds0, ds1, pen;
 double x_position = 0.0;
 double y_position = 0.0;
 double z_position = 0.0;
+
 double orientation = 0.0;
 
 double x_start = 0.0;
 double y_start = 0.0;
 double z_start = 0.0;
+
+double charger_x = 0.0;
+double charger_y = 0.0;
+double charger_z = 0.0;
 
 const int n_lines = 4;
 const char* screen[n_lines] = {"Robot: ", "Motion Planner: ", "Motion Primitives: ", "Battery: "};
@@ -36,8 +41,8 @@ PRT_VALUE* P_Init_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
 
   wb_robot_init();
 
-  pen = wb_robot_get_device("pen");
-  wb_pen_set_ink_color(pen, 0x000000, 0.0);
+  //pen = wb_robot_get_device("pen");
+  //wb_pen_set_ink_color(pen, 0x000000, 0.0);
 
   compass = wb_robot_get_device("compass");
   wb_compass_enable(compass, TIME_STEP);
@@ -71,7 +76,57 @@ PRT_VALUE* P_Init_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
   orientation = atan2(-north[0], -north[2]);
   orientation = orientation < 0 ? orientation + 2*M_PI : orientation;
 
+  FILE* fp = fopen("../try_supervisor/scene", "r");
+  char buffer[1024];
+  int temp = 0;
+  while (fgets(buffer, 1024, fp)) {
+    float pos = atof(buffer);
+    switch (temp) {
+      case (0): {
+        x_position = pos;
+        x_start = x_position;
+        break;
+      }
+      case (1): {
+        z_position = pos;
+        z_start = z_position;
+        break;
+      }
+      case (2): {
+        charger_x = pos;
+        break;
+      }
+      case (3): {
+        charger_z = pos;
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    temp++;
+  }
+  fclose(fp);
+
   return PrtMkIntValue((PRT_UINT32)1);
+}
+
+PRT_VALUE* P_GetRobotPosition_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
+  PRT_VALUE* value = (PRT_VALUE*)PrtMalloc(sizeof(PRT_VALUE));
+  PRT_TYPE* seqType = PrtMkSeqType(PrtMkPrimitiveType(PRT_KIND_FLOAT));
+  value = PrtMkDefaultValue(seqType);
+  PrtSeqInsert(value, PrtMkIntValue(0), PrtMkFloatValue(x_position));
+  PrtSeqInsert(value, PrtMkIntValue(1), PrtMkFloatValue(z_position));
+  return value;
+}
+
+PRT_VALUE* P_GetChargerPosition_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
+  PRT_VALUE* value = (PRT_VALUE*)PrtMalloc(sizeof(PRT_VALUE));
+  PRT_TYPE* seqType = PrtMkSeqType(PrtMkPrimitiveType(PRT_KIND_FLOAT));
+  value = PrtMkDefaultValue(seqType);
+  PrtSeqInsert(value, PrtMkIntValue(0), PrtMkFloatValue(charger_x));
+  PrtSeqInsert(value, PrtMkIntValue(1), PrtMkFloatValue(charger_z));
+  return value;
 }
 
 PRT_VALUE* P_CheckIfReached_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
@@ -276,12 +331,12 @@ PRT_VALUE* P_Print_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
   char* str = PrtPrimGetString(*argRefs[0]);
   int line = PrtPrimGetInt(*argRefs[1]);
   strncpy(lines[line], str, 100);
-  std::cout << "\x1b[2J";
+  //std::cout << "\x1b[2J";
   for (int i = 0; i < n_lines; i++) {
     if (lines[i][0] == 85) {
-      std::cout << screen[i] << "\x1b[32m" << lines[i] << "\x1b[0m" << std::endl;
+      //std::cout << screen[i] << "\x1b[32m" << lines[i] << "\x1b[0m" << std::endl;
     } else {
-      std::cout << screen[i] << "\x1b[31m" << lines[i] << "\x1b[0m" << std::endl;
+      //std::cout << screen[i] << "\x1b[31m" << lines[i] << "\x1b[0m" << std::endl;
     }
   }
   return PrtMkIntValue((PRT_UINT32)1);
