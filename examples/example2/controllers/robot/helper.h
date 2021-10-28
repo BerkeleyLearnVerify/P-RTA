@@ -17,3 +17,6 @@ extern "C" PRT_VALUE* P_UpdateEstimatedOrientationWithCompass_IMPL(PRT_MACHINEIN
 extern "C" PRT_VALUE* P_IsInTrajectory_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs);
 extern "C" PRT_VALUE* P_RandomController_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs);
 extern "C" PRT_VALUE* P_Print_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs);
+extern "C" PRT_VALUE* P_GetRobotPosition_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs);
+extern "C" PRT_VALUE* P_GetChargerPosition_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs);
+extern "C" PRT_VALUE* P_GetBoxPositions_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs);

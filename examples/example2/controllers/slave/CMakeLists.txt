@@ -19,7 +19,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -O2 -pthread ")
 
 
 # Link with the Webots controller library.
-link_directories(/Applications/Webots.app/lib/controller) # If your Webots Simulator is in a different directory, change this!
+link_directories(/Applications/Webots.app/lib) # If your Webots Simulator is in a different directory, change this!
 set (LIBRARIES ${CMAKE_SHARED_LIBRARY_PREFIX}Controller${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CppController${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 add_executable(slave

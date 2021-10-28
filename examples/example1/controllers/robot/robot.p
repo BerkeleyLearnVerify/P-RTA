@@ -109,10 +109,7 @@ machine MotionPlanner {
     var goalLocation: locationType;
 
     fun DM(): string {
-        if ((currentLocation.0 < 0.5 && currentLocation.1 < 0.5 &&
-            currentLocation.0 > -0.5 && currentLocation.1 > -0.5) || 
-           (goalLocation.0 < 0.5 && goalLocation.1 < 0.5 &&
-            goalLocation.0 > -0.5 && goalLocation.1 > -0.5)) {
+        if (false) {
             return "AC";
         }
         return "SC";
@@ -131,13 +128,25 @@ machine MotionPlanner {
                currentLocation.1 != goalLocation.1) {
             if (currentLocation.0 > goalLocation.0) {
                 currentLocation.0 = currentLocation.0 - step;
+                if (currentLocation.0 < goalLocation.0) {
+                    currentLocation.0 = goalLocation.0;
+                }
             } else if (currentLocation.0 < goalLocation.0) {
                 currentLocation.0 = currentLocation.0 + step;
+                if (currentLocation.0 > goalLocation.0) {
+                    currentLocation.0 = goalLocation.0;
+                }
             }
             if (currentLocation.1 > goalLocation.1) {
                 currentLocation.1 = currentLocation.1 - step;
+                if (currentLocation.1 < goalLocation.1) {
+                    currentLocation.1 = goalLocation.1;
+                }
             } else if (currentLocation.1 < goalLocation.1) {
                 currentLocation.1 = currentLocation.1 + step;
+                if (currentLocation.1 > goalLocation.1) {
+                    currentLocation.1 = goalLocation.1;
+                }
             }
             send destination, eMotion, currentLocation;
         }
@@ -202,7 +211,7 @@ machine MotionPrimitives {
     fun DM(): string {
         var temp: bool;
         temp = CheckReelayMonitor(trajectoryDeviationMonitorId);
-        if (temp) {
+        if (false) {
             return "AdvancedMotionController";
         }
         return "SafeMotionController";
@@ -276,7 +285,7 @@ machine MotionPrimitives {
     fun DMLowBattery(): string {
         var temp: bool;
         temp = CheckReelayMonitor(trajectoryDeviationMonitorId);
-        if (temp) {
+        if (false) {
             return "AdvancedMotionControllerLowBattery";
         }
         return "SafeMotionControllerLowBattery";

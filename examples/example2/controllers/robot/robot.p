@@ -20,6 +20,10 @@ fun CheckReelayMonitor(id: int): bool;
 fun IsInTrajectory(x0: float, z0: float, x1:float, z1:float, trajectoryDeviationThreshold: float): bool;
 fun RandomController(isLowBattery: bool): int;
 
+fun GetRobotPosition(): seq[float];
+fun GetChargerPosition(): seq[float];
+fun GetBoxPositions(): seq[float];
+
 type locationType = (float, float);
 
 event eMotionRequest: (machine, locationType, locationType, bool);
@@ -50,6 +54,8 @@ machine Robot {
     var goals: seq[locationType];
     var currentGoalIndex: int;
     var step: float;
+    var temp: seq[float];
+    var chargerLocation: locationType;
     var obstacles: seq[locationType];
 
     fun DM(): string {
@@ -75,16 +81,18 @@ machine Robot {
 
     start state Init {
         entry {
-            currentLocation = (0.0, 0.0);
             Init();
-            obstacles += (sizeof(obstacles), (-0.375, 0.375));
-            obstacles += (sizeof(obstacles), (0.375, -0.375));
-            obstacles += (sizeof(obstacles), (0.375, 0.0));
-            obstacles += (sizeof(obstacles), (0.0, 0.375));
-            obstacles += (sizeof(obstacles), (0.0, -0.375));
-            obstacles += (sizeof(obstacles), (-0.375, 0.0));
-            obstacles += (sizeof(obstacles), (1.0, 0.0));
-            obstacles += (sizeof(obstacles), (-1.0, 0.0));
+            temp = GetRobotPosition();
+            currentLocation = (temp[0], temp[1]);
+            temp = GetChargerPosition();
+            chargerLocation = (temp[0], temp[1]);
+            temp = GetBoxPositions();
+            obstacles += (sizeof(obstacles), (temp[0], temp[1]));
+            obstacles += (sizeof(obstacles), (temp[2], temp[3]));
+            obstacles += (sizeof(obstacles), (temp[4], temp[5]));
+            obstacles += (sizeof(obstacles), (temp[6], temp[7]));
+            obstacles += (sizeof(obstacles), (temp[8], temp[9]));
+            obstacles += (sizeof(obstacles), (temp[10], temp[11]));
             step = 0.25;
             planExecutor = new PlanExecutor(this, currentLocation, 0.1, 300.0);
             obstacleAvoidance = new ObstacleAvoidance(obstacles, 0.125);//!!!!Ensure that battery also uses this
@@ -93,7 +101,7 @@ machine Robot {
             motionPlanner = new MotionPlanner(geoFencing1, step);
             position = new Position(planExecutor, 0.01);
             orientation = new Orientation(planExecutor, 0.01);
-            battery = new Battery(planExecutor, motionPlanner, (0.0, 0.0), 100.0, 200.0);
+            battery = new Battery(planExecutor, motionPlanner, chargerLocation, 100.0, 200.0);
             goals += (sizeof(goals), (1.0, 1.0));
             goals += (sizeof(goals), (-1.0, 1.0));
             goals += (sizeof(goals), (-1.0, -1.0));
@@ -126,10 +134,10 @@ machine MotionPlanner {
     var isHighPriorityMotionRequest: bool;
 
     fun DM(): string {
-        if ((currentLocation.0 < 0.5 && currentLocation.1 < 0.5 &&
-            currentLocation.0 > -0.5 && currentLocation.1 > -0.5) || 
-           (goalLocation.0 < 0.5 && goalLocation.1 < 0.5 &&
-            goalLocation.0 > -0.5 && goalLocation.1 > -0.5)) {
+        if ((currentLocation.0 < 0.2 && currentLocation.1 < 0.2 &&
+            currentLocation.0 > -0.2 && currentLocation.1 > -0.2) && 
+           (goalLocation.0 < 0.2 && goalLocation.1 < 0.2 &&
+            goalLocation.0 > -0.2 && goalLocation.1 > -0.2)) {
             return "AC";
         }
         return "SC";
@@ -155,13 +163,25 @@ machine MotionPlanner {
                waypoint.1 != goalLocation.1) {
             if (waypoint.0 > goalLocation.0) {
                 waypoint.0 = waypoint.0 - step;
+                if (waypoint.0 < goalLocation.0) {
+                    waypoint.0 = goalLocation.0;
+                }
             } else if (waypoint.0 < goalLocation.0) {
                 waypoint.0 = waypoint.0 + step;
+                if (waypoint.0 > goalLocation.0) {
+                    waypoint.0 = goalLocation.0;
+                }
             }
             if (waypoint.1 > goalLocation.1) {
                 waypoint.1 = waypoint.1 - step;
+                if (waypoint.1 < goalLocation.1) {
+                    waypoint.1 = goalLocation.1;
+                }
             } else if (waypoint.1 < goalLocation.1) {
                 waypoint.1 = waypoint.1 + step;
+                if (waypoint.1 > goalLocation.1) {
+                    waypoint.1 = goalLocation.1;
+                }
             }
             motionPlan += (sizeof(motionPlan), waypoint);
         }
@@ -207,10 +227,10 @@ machine ObstacleAvoidance {
     var motionPlan: seq[locationType];
 
     fun DM(): string {
-        if ((currentLocation.0 < 0.5 && currentLocation.1 < 0.5 &&
-            currentLocation.0 > -0.5 && currentLocation.1 > -0.5) || 
-           (goalLocation.0 < 0.5 && goalLocation.1 < 0.5 &&
-            goalLocation.0 > -0.5 && goalLocation.1 > -0.5)) {
+        if ((currentLocation.0 < 0.2 && currentLocation.1 < 0.2 &&
+            currentLocation.0 > -0.2 && currentLocation.1 > -0.2) && 
+           (goalLocation.0 < 0.2 && goalLocation.1 < 0.2 &&
+            goalLocation.0 > -0.2 && goalLocation.1 > -0.2)) {
             return "AC";
         }
         return "SC";
@@ -240,7 +260,10 @@ machine ObstacleAvoidance {
             j = 0;
             flag = true;
             while (j < sizeof(obstacles)) {
-                if (motionPlan[i].0 == obstacles[j].0 && motionPlan[i].1 == obstacles[j].1) {
+                if (motionPlan[i].0 >= obstacles[j].0 - 0.2 &&
+                    motionPlan[i].0 <= obstacles[j].0 + 0.2 &&
+                    motionPlan[i].1 >= obstacles[j].1 - 0.2 &&
+                    motionPlan[i].1 <= obstacles[j].1 + 0.2) {
                     flag = false;
                 }
                 j = j + 1;
@@ -296,10 +319,10 @@ machine GeoFencing {
     var motionPlan: seq[locationType];
 
     fun DM(): string {
-        if ((currentLocation.0 < 0.5 && currentLocation.1 < 0.5 &&
-            currentLocation.0 > -0.5 && currentLocation.1 > -0.5) || 
-           (goalLocation.0 < 0.5 && goalLocation.1 < 0.5 &&
-            goalLocation.0 > -0.5 && goalLocation.1 > -0.5)) {
+        if ((currentLocation.0 < 0.2 && currentLocation.1 < 0.2 &&
+            currentLocation.0 > -0.2 && currentLocation.1 > -0.2) && 
+           (goalLocation.0 < 0.2 && goalLocation.1 < 0.2 &&
+            goalLocation.0 > -0.2 && goalLocation.1 > -0.2)) {
             return "AC";
         }
         return "SC";
@@ -409,6 +432,11 @@ machine PlanExecutor {
     var ds: seq[float];
     var robot: machine;
 
+    fun printStats() {
+        print(format("Run: {0} {1} {2}\n", advancedMotionControllerCount, safeMotionControllerCount, collisionAvoidanceControllerCount));
+        print(format("LowBatteryRun: {0} {1} {2}\n", advancedMotionControllerLowBatteryCount, safeMotionControllerLowBatteryCount, collisionAvoidanceControllerLowBatteryCount));
+    }
+
     fun updateMonitors() {
         var temp: bool;
         temp = IsInTrajectory(currentLocation.0, currentLocation.1, currentMotion.0, currentMotion.1, trajectoryDeviationThreshold);
@@ -469,6 +497,7 @@ machine PlanExecutor {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             advancedMotionControllerCount = advancedMotionControllerCount + 1;
         } else if (currentMotionIndex < sizeof(motions)) {
@@ -478,6 +507,7 @@ machine PlanExecutor {
                 currentLocation = currentMotion;
                 currentMotionIndex = currentMotionIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             advancedMotionControllerCount = advancedMotionControllerCount + 1;
         } else {
@@ -501,6 +531,7 @@ machine PlanExecutor {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             safeMotionControllerCount = safeMotionControllerCount + 1;
         } else if (currentMotionIndex < sizeof(motions)) {
@@ -512,6 +543,7 @@ machine PlanExecutor {
                 currentLocation = currentMotion;
                 currentMotionIndex = currentMotionIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             safeMotionControllerCount = safeMotionControllerCount + 1;
         } else {
@@ -564,6 +596,7 @@ machine PlanExecutor {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             advancedMotionControllerLowBatteryCount = advancedMotionControllerLowBatteryCount + 1;
         } else {
@@ -587,6 +620,7 @@ machine PlanExecutor {
                 currentLocation = currentMotion;
                 currentHighPriorityMotionsIndex = currentHighPriorityMotionsIndex + 1;
                 send robot, eCurrentLocation, currentLocation;
+                printStats();
             }
             safeMotionControllerLowBatteryCount = safeMotionControllerLowBatteryCount + 1;
         } else {
@@ -676,15 +710,16 @@ machine Battery {
     var batteryLevelUpperBound: float;
     var monitor1Id: int;
     var monitor2Id: int;
+    var isBatteryLow: bool;
 
     fun DM(): string {
         var monitorStatus: bool;
         monitorStatus = CheckReelayMonitor(monitor1Id);
-        if (monitorStatus) {
+        if (!isBatteryLow && monitorStatus) {
             return "HandleLowBattery";
         }
         monitorStatus = CheckReelayMonitor(monitor2Id);
-        if (monitorStatus) {
+        if (isBatteryLow && monitorStatus) {
             return "NotifyRecovery";
         }
         return "Idle";
@@ -703,12 +738,14 @@ machine Battery {
 
     fun HandleLowBattery() {
         Print("Trusted Controller Low Battery", 3);
+        isBatteryLow = true;
         send destination, eBatteryLow, this;
         updateMonitors();
     }
 
     fun NotifyRecovery() {
         Print("Trusted Controller Battery Recovered", 3);
+        isBatteryLow = false;
         send destination, eBatteryRecovered, this;
         updateMonitors();
     }
@@ -720,6 +757,7 @@ machine Battery {
             chargerLocation = payload.2;
             batteryLevelLowerBound= payload.3;
             batteryLevelUpperBound= payload.4;
+            isBatteryLow = false;
             monitor1Id = InitDiscreteReelayMonitor(format("pre{{batteryLevel > {0}}} and {{batteryLevel <= {0}}}", batteryLevelLowerBound));
             monitor2Id = InitDiscreteReelayMonitor(format("pre{{batteryLevel <= {0}}} and {{batteryLevel > {0}}}", batteryLevelUpperBound));
             goto Run;

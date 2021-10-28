@@ -1,7 +1,6 @@
-#VRML_SIM R2021b utf8
+#VRML_SIM R2018b utf8
 WorldInfo {
   basicTimeStep 16
-  coordinateSystem "NUE"
   randomSeed 16
 }
 Viewpoint {
@@ -16,49 +15,49 @@ RectangleArena {
   floorSize 2.5 2.5
   floorTileSize 5 5
 }
-WoodenBox {
+DEF box1 WoodenBox {
   translation -0.375 0.05 0.375
   rotation 0 -1 0 0.3468
   name "wooden box(1)"
   size 0.1 0.1 0.1
   mass 0.2
 }
-WoodenBox {
+DEF box2 WoodenBox {
   translation 0.375 0.05 -0.375
   rotation 0 -1 0 0.34688418883387256
   name "wooden box(2)"
   size 0.1 0.1 0.1
   mass 0.2
 }
-WoodenBox {
+DEF box3 WoodenBox {
   translation 0.375 0.05 0.0
   rotation 0 -1 0 0.3468
   name "wooden box(3)"
   size 0.1 0.1 0.1
   mass 0.2
 }
-WoodenBox {
+DEF box4 WoodenBox {
   translation -0.375 0.05 0.0
   rotation 0 -1 0 0.3468
   name "wooden box(4)"
   size 0.1 0.1 0.1
   mass 0.2
 }
-WoodenBox {
+DEF box5 WoodenBox {
   translation 1.0 0.05 0.0
   rotation 0 -1 0 0.3468
   name "wooden box(5)"
   size 0.1 0.1 0.1
   mass 0.2
 }
-WoodenBox {
+DEF box6 WoodenBox {
   translation -1.0 0.05 0.0
   rotation 0 -1 0 0.3468
   name "wooden box(6)"
   size 0.1 0.1 0.1
   mass 0.2
 }
-Robot {
+DEF robot Robot {
   translation 0.0 0 0
   rotation 0 0 0 0
   children [
@@ -214,12 +213,6 @@ Robot {
     Compass {
       translation 0 0.05 0
     }
-    Pen {
-      translation 0 0.001 0
-      inkColor 1 0 0
-      inkDensity 1.0
-      leadSize 0.005
-    }
   ]
   name "MyBot"
   boundingObject Transform {
@@ -238,7 +231,7 @@ Robot {
   ]
   cpuConsumption 0.5
 }
-Charger {
+DEF charger Charger {
   translation 0 0 0
   children [
     Transform {
@@ -250,7 +243,6 @@ Charger {
             transparency 0.20000000298023224
             roughness 0.2189099510000001
             metalness 0
-            emissiveColor 1 0 0
           }
           geometry DEF CHARGER_GEOM Cylinder {
             height 0.3
@@ -300,7 +292,7 @@ DEF GEO_FENCE_2 Solid {
   name "solid(6)"
   boundingObject USE GEO_FENCE_SHAPE
 }
-Robot {
+DEF slave1 Robot {
   translation -0.75 0 0.75
   rotation 0 0 0 0
   children [
@@ -466,7 +458,7 @@ Robot {
   controller "slave"
   cpuConsumption 0.5
 }
-Robot {
+DEF slave2 Robot {
   translation 0.75 0 -0.75
   rotation 0 0 0 0
   children [
@@ -632,7 +624,7 @@ Robot {
   controller "slave"
   cpuConsumption 0.5
 }
-Robot {
+DEF slave3 Robot {
   translation -0.5 0 0.5
   rotation 0 0 0 0
   children [
@@ -798,7 +790,7 @@ Robot {
   controller "slave"
   cpuConsumption 0.5
 }
-Robot {
+DEF slave4 Robot {
   translation 0.5 0 -0.5
   rotation 0 0 0 0
   children [
@@ -1002,4 +994,7 @@ DEF WAYPOINT_4 Solid {
     USE WAYPOINT_SHAPE
   ]
   name "waypoint4"
+}
+Supervisor {
+  controller "try_supervisor"
 }
