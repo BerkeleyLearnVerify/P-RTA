@@ -40,7 +40,7 @@ machine MotionPrimitives {
         SetLed(1, 0); /* set led1 to black */
         temp = CheckMonitor(monitorId);
         //if (tourCount > 1 && !temp && !IsTherePotentialAvoidLocation()) {
-        if (!temp && !IsTherePotentialAvoidLocation()) {
+        if (!temp) {
             SetLed(0, 2); /* set led0 to green */
             return "AdvancedMotionController";
         }
@@ -55,7 +55,8 @@ machine MotionPrimitives {
         var forwardSpeed: float;
         var rotationSpeed: float;
         forwardSpeed = 0.1;
-        rotationSpeed = 0.4;
+        rotationSpeed = 0.2;
+        PrintControllerExecution(0);
         if (currentHighPriorityMotionsIndex < sizeof(highPriorityMotions)) {
             currentMotion = highPriorityMotions[currentHighPriorityMotionsIndex];
             if (!RotateTowardsLocation(currentMotion.0, currentMotion.1, rotationSpeed)) {
@@ -104,6 +105,7 @@ machine MotionPrimitives {
     fun AdvancedMotionController() {
         var speedMultiplier: float;
         speedMultiplier = 2.0;
+        PrintControllerExecution(1);
         if (currentHighPriorityMotionsIndex < sizeof(highPriorityMotions)) {
             currentMotion = highPriorityMotions[currentHighPriorityMotionsIndex];
             StepPID(currentMotion.0, currentMotion.1);
@@ -173,7 +175,7 @@ machine MotionPrimitives {
 
     state Run {
         rtamodule {
-            controller SafeMotionController period 20 ms;
+            controller SafeMotionController period 50 ms;
             controller AdvancedMotionController period 10 ms;
             decisionmodule DM @ {SafeMotionController: 1,
                                  AdvancedMotionController: 1};

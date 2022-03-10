@@ -554,7 +554,7 @@ PRT_VALUE* P_CheckIfReached_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs)
   float x = PrtPrimGetFloat(*argRefs[0]);
   float z = PrtPrimGetFloat(*argRefs[1]);
   float speedMultiplier = PrtPrimGetFloat(*argRefs[2]);
-  bool returnValue = (fabs(x - x_position) + fabs(z - z_position)) < speedMultiplier * 0.05;
+  bool returnValue = (fabs(x - x_position) + fabs(z - z_position)) < speedMultiplier * 0.025;
   //std::cout << x_position << " " << z_position << " " << x << " " << z << std::endl;
   if (returnValue) {
     x_start = x_position;
@@ -581,7 +581,7 @@ PRT_VALUE* P_RotateTowardsLocation_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** a
   }
   bool direction = angleDifference > 0;
   //std::cout << angle2Goal << " " << orientation << " " << angleDifference << std::endl;
-  if (fabs(angleDifference) > 0.2 * speed) {
+  if (fabs(angleDifference) > 0.05 * speed) {
     if (direction) {
       kobuki_manager.turnLeft(speed);
     } else {
@@ -770,10 +770,10 @@ PRT_VALUE* P_GetOMPLMotionPlanAC_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** arg
     PRT_TYPE* seqType = PrtMkSeqType(PrtMkPrimitiveType(PRT_KIND_FLOAT));
     value = PrtMkDefaultValue(seqType);
     if (solved) {
-        std::cout << "Found solution:" << std::endl;
+        //std::cout << "Found solution:" << std::endl;
         // print the path to screen
         ss.simplifySolution();
-        ss.getSolutionPath().print(std::cout);
+        //ss.getSolutionPath().print(std::cout);
         waypoints = ss.getSolutionPath();
         std::vector<ob::State*> waypointsVector = waypoints.getStates();
         if (waypointsVector[waypointsVector.size() - 1]->as<ob::SE2StateSpace::StateType>()->getX() == goalLocationX &&
@@ -878,10 +878,10 @@ PRT_VALUE* P_GetOMPLMotionPlanSC_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** arg
     PRT_TYPE* seqType = PrtMkSeqType(PrtMkPrimitiveType(PRT_KIND_FLOAT));
     value = PrtMkDefaultValue(seqType);
     if (solved) {
-        std::cout << "Found solution:" << std::endl;
+        //std::cout << "Found solution:" << std::endl;
         // print the path to screen
         ss.simplifySolution();
-        ss.getSolutionPath().print(std::cout);
+        //ss.getSolutionPath().print(std::cout);
         waypoints = ss.getSolutionPath();
         std::vector<ob::State*> waypointsVector = waypoints.getStates();
         for (unsigned int i = 1; i < waypointsVector.size(); i++) {
@@ -976,5 +976,22 @@ PRT_VALUE* P_CheckMonitor_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
   bool returnValue = checkMonitor(id);
   // std::cout << "Monitor returned: " << returnValue << std::endl;
   return PrtMkBoolValue((PRT_BOOLEAN)returnValue);
+}
+
+PRT_VALUE* P_PrintControllerExecution_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
+  int id = PrtPrimGetInt(*argRefs[0]);
+  if (id == 0) {
+    std::cout << "TC," << x_position << "," << z_position << std::endl;
+  } else {
+    std::cout << "UT," << x_position << "," << z_position << std::endl;
+  }
+  // std::cout << "Monitor returned: " << returnValue << std::endl;
+  return PrtMkBoolValue((PRT_BOOLEAN)true);
+}
+
+PRT_VALUE* P_PrintTime_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
+  std::cout << "Time: " << std::time(0) << std::endl;
+  // std::cout << "Monitor returned: " << returnValue << std::endl;
+  return PrtMkBoolValue((PRT_BOOLEAN)true);
 }
 

@@ -27,6 +27,8 @@ fun IsThereAvoidLocationInSegment(x_start: float, z_start: float, x_goal: float,
 fun InitMonitorGlobalLowerBound(len: int, threshold: float): int;
 fun UpdateMonitor(id: int, value: float): int;
 fun CheckMonitor(id: int): bool;
+fun PrintControllerExecution(id: int): bool;
+fun PrintTime(): bool;
 
 type locationType = (float, float);
 
@@ -46,9 +48,14 @@ machine EgoRobot {
     var temp: seq[float];
     var chargerLocation: locationType;
     var geoFencedLocations: seq[locationType];
+    var tourCount: int;
 
     fun DM(): string {
         if (currentLocation == goals[currentGoalIndex]) {
+            if (currentLocation.0 == 1.0 && currentLocation.1 == 1.0) {
+                PrintTime();
+                tourCount = tourCount + 1;
+            }
             if (currentGoalIndex + 1 < sizeof(goals)) {
                 currentGoalIndex = currentGoalIndex + 1;
             } else {
@@ -64,7 +71,12 @@ machine EgoRobot {
     }
 
     fun SC() {
-        send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, goals[currentGoalIndex], false);
+        if (tourCount > 1) {
+            send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, (0.0, 0.0), false);
+            goto WaitB0Press;
+        } else {
+            send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, goals[currentGoalIndex], false);
+        }
     }
 
     fun handler(payload: locationType) {
@@ -86,6 +98,7 @@ machine EgoRobot {
             goals += (sizeof(goals), (-1.0, -1.0));
             goals += (sizeof(goals), (1.0, -1.0));
             currentGoalIndex = 0;
+            tourCount = 0;
             goto WaitB0Press;
         }
     }
