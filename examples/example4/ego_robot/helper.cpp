@@ -17,6 +17,7 @@
 #include "helper.hpp"
 
 #include "monitor.hpp"
+#include "socket.hpp"
 
 #include <time.h>
 
@@ -79,7 +80,15 @@ double charger_x = 0.0;
 double charger_y = 0.0;
 double charger_z = 0.0;
 
+bool firstTourIsCompleted = false;
+
+machine_t machine;
 int currentControllers[4] = {0, 0, 0, 0};
+
+
+// ASSUMPTION: WE COMPLETE THE FIRST TOUR BEFORE BATTERY DRAINS!!!!
+float batteryLevel = 1000.0;
+float batteryStep = 0.01;
 
 float prev_position_difference = 0.0;
 float prev_angle_difference = 0.0;
@@ -103,6 +112,8 @@ float K_tv;
 float K_ti;
 float BASE_SPEED;
 float SPEED_SCALE;
+
+int count = 0;
 
 /*****************************************************************************
 ** Classes
@@ -140,7 +151,7 @@ public:
     is_cliff_left(false), is_cliff_center(false), is_cliff_right(false)
   {
 
-    //openConnection();
+    openConnection();
     kobuki::Parameters parameters;
     parameters.sigslots_namespace = "/kobuki";
     parameters.device_port = device;
@@ -205,6 +216,18 @@ public:
     } else {
       is_geofence_violated = true;
     }
+    if (count == 10) {
+      kobuki_t pos;
+      pos.x = x_position;
+      pos.y = z_position;
+      pos.angle = orientation;
+      sendKobukiPosition(pos);
+      count = 0;
+      // std::cout << "Pos Sent!" << std::endl;
+    } else {
+      count++;
+    }
+    // std::cout << "After: " << x_position << " | " << z_position << " | " << orientation << std::endl;
   }
 
   const ecl::linear_algebra::Vector3d& getPose() {
@@ -242,6 +265,7 @@ public:
         is_button_pressed_b0 = true;
       } else if (event.state == kobuki::ButtonEvent::Released) {
         if (is_button_pressed_b0) {
+          batteryLevel = 100.0;
           is_button_pressed_and_released_b0 = true;
         }
         is_button_pressed_b0 = false;
@@ -286,6 +310,9 @@ public:
     }
     //std::cout << "AC" << std::endl;
     kobuki.setBaseControl(positionalSpeed, rotationalSpeed);
+    if (firstTourIsCompleted) {
+      batteryLevel -= batteryStep;
+    }
   }
 
   void moveForward(float speed) {
@@ -295,6 +322,10 @@ public:
       kobuki.setBaseControl(1.0, 0.0);
     } else {
       kobuki.setBaseControl(speed, 0.0);
+    }
+    //std::cout << "SC Move moveForward" << std::endl;
+    if (firstTourIsCompleted) {
+      batteryLevel -= batteryStep;
     }
   }
 
@@ -306,6 +337,9 @@ public:
     } else {
       kobuki.setBaseControl(-speed, 0.0);
     }
+    if (firstTourIsCompleted) {
+      batteryLevel -= batteryStep;
+    }
   }
 
   void turnLeft(float speed) {
@@ -316,6 +350,10 @@ public:
     } else {
       kobuki.setBaseControl(0.0, speed);
     }
+    //std::cout << "SC Move turnLeft" << std::endl;
+    if (firstTourIsCompleted) {
+      batteryLevel -= batteryStep;
+    }
   }
 
   void turnRight(float speed) {
@@ -325,6 +363,10 @@ public:
       kobuki.setBaseControl(0.0, -1.0);
     } else {
       kobuki.setBaseControl(0.0, -speed);
+    }
+    //std::cout << "SC Move turnRight" << std::endl;
+    if (firstTourIsCompleted) {
+      batteryLevel -= batteryStep;
     }
   }
 
@@ -618,6 +660,16 @@ PRT_VALUE* P_RegisterPotentialAvoidLocation_IMPL(PRT_MACHINEINST* context, PRT_V
     if (getDistanceBetweenPairs(potentialAvoidLocation.first, potentialAvoidLocation.second, (*it).first, (*it).second) <= 2 * R) {
       avoidLocations.insert(*it);
       avoidLocations.insert(potentialAvoidLocation);
+      obstacle_t pos1;
+      pos1.x = (*it).first;
+      pos1.y = (*it).second;
+      obstacle_t pos2;
+      pos2.x = potentialAvoidLocation.first;
+      pos2.y = potentialAvoidLocation.second;
+      sendObstaclePosition(pos1);
+      sendObstaclePosition(pos2);
+
+      // std::cout << "Obs Sent!" << std::endl;
     }
   }
   potentialAvoidLocations.insert(potentialAvoidLocation);
@@ -637,6 +689,10 @@ PRT_VALUE* P_RegisterGeoFenceLocation_IMPL(PRT_MACHINEINST* context, PRT_VALUE**
   std::pair<float, float> geoFenceLocation(x_goal, z_goal);
   geoFenceLocations.insert(geoFenceLocation);
   return PrtMkBoolValue((PRT_BOOLEAN)true);
+}
+
+PRT_VALUE* P_GetBatteryLevel_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
+  return PrtMkFloatValue((PRT_FLOAT)batteryLevel);
 }
 
 PRT_VALUE* P_GetTrajectoryDeviation_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
@@ -925,6 +981,14 @@ PRT_VALUE* P_IsTherePotentialAvoidLocation_IMPL(PRT_MACHINEINST* context, PRT_VA
 }
 
 
+
+PRT_VALUE* P_FirstTourIsCompleted_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
+  firstTourIsCompleted = true;
+  return PrtMkIntValue((PRT_UINT32)1);
+}
+
+
+
 PRT_VALUE* P_ResetOdometry_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
   x_position = 0.0;
   y_position = 0.0;
@@ -976,5 +1040,21 @@ PRT_VALUE* P_CheckMonitor_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
   bool returnValue = checkMonitor(id);
   // std::cout << "Monitor returned: " << returnValue << std::endl;
   return PrtMkBoolValue((PRT_BOOLEAN)returnValue);
+}
+
+PRT_VALUE* P_NotifyController_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
+  int machineId = PrtPrimGetInt(*argRefs[0]);
+  int controllerId = PrtPrimGetInt(*argRefs[1]);
+  if (currentControllers[machineId] != controllerId) {
+    switch (machineId) {
+      case 0: machine.robot = (controller) controllerId; break;
+      case 1: machine.repair = (controller) controllerId; break;
+      case 2: machine.motion_planner = (controller) controllerId; break;
+      case 3: machine.motion_primitives = (controller) controllerId; break;
+    }
+    currentControllers[machineId] = controllerId;
+    sendMachine(machine);
+  }
+  return PrtMkIntValue((PRT_UINT32)1);
 }
 

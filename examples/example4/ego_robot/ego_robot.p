@@ -14,6 +14,7 @@ fun GetIsBumperReleasedLeft(): bool;
 fun GetIsBumperReleasedCenter(): bool;
 fun GetIsBumperReleasedRight(): bool;
 fun GetIsGeoFenceViolated(): bool;
+fun GetBatteryLevel(): float;
 fun GetIsButtonPressedAndReleasedB0(): bool;
 fun StepPID(x: float, z:float): int;
 fun GetOMPLMotionPlanAC(currentLocationX: float, currentLocationZ: float, goalLocationX: float, goalLocationZ: float): seq[(float, float)];
@@ -22,11 +23,13 @@ fun RegisterPotentialAvoidLocation(x_goal: float, z_goal: float): bool;
 fun RegisterGeoFenceLocation(x_goal: float, z_goal: float): bool;
 fun SetLed(led_num: int, led_color: int): int;
 fun IsTherePotentialAvoidLocation(): bool;
+fun FirstTourIsCompleted(): int;
 fun ResetOdometry(): int;
 fun IsThereAvoidLocationInSegment(x_start: float, z_start: float, x_goal: float, z_goal: float): bool;
 fun InitMonitorGlobalLowerBound(len: int, threshold: float): int;
 fun UpdateMonitor(id: int, value: float): int;
 fun CheckMonitor(id: int): bool;
+fun NotifyController(machineId: int, controllerId: int): int;
 
 type locationType = (float, float);
 
@@ -34,12 +37,15 @@ event eMotionRequest: (machine, locationType, locationType, bool);
 event eMotionRequestX priority 10: (machine, locationType, locationType, bool);
 event eMotion: locationType;
 event eMotionX priority 10: locationType;
+event eBatteryLow priority 10: machine;
+event eBatteryRecovered priority 10: machine;
 event eCurrentLocation priority 10: locationType;
 event eCurrentGoal priority 10: locationType;
 
 machine EgoRobot {
     var motionPlanner: machine;
     var motionPrimitives: machine;
+    var battery: machine;
     var currentLocation: locationType;
     var goals: seq[locationType];
     var currentGoalIndex: int;
@@ -54,8 +60,10 @@ machine EgoRobot {
             } else {
                 currentGoalIndex = 0;
             }
+            NotifyController(0, 0);
             return "SC";
         }
+        NotifyController(0, 1);
         return "AC";
     }
 
@@ -78,9 +86,10 @@ machine EgoRobot {
             currentLocation = (temp[0], temp[1]);
             temp = GetChargerPosition();
             chargerLocation = (temp[0], temp[1]);
-            //geoFencedLocations += (sizeof(geoFencedLocations), (1.0, 0.0));
+            geoFencedLocations += (sizeof(geoFencedLocations), (1.0, 0.0));
             motionPlanner = new MotionPlanner(geoFencedLocations);
             motionPrimitives = new MotionPrimitives(this, motionPlanner, currentLocation, 0.2, 300.0);
+            battery = new Battery(motionPrimitives, motionPlanner, chargerLocation, 50.0, 100.0);
             goals += (sizeof(goals), (1.0, 1.0));
             goals += (sizeof(goals), (-1.0, 1.0));
             goals += (sizeof(goals), (-1.0, -1.0));

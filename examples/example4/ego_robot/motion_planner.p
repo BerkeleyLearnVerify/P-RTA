@@ -10,8 +10,10 @@ machine MotionPlanner {
         var temp: bool;
         temp = IsThereAvoidLocationInSegment(currentLocation.0, currentLocation.1, goalLocation.0, goalLocation.1);
         if (!temp) {
+            NotifyController(2, 1);
             return "AC";
         }
+        NotifyController(2, 0);
         return "SC";
     }
 
