@@ -42,12 +42,14 @@ machine MotionPrimitives {
         //if (tourCount > 1 && !temp && !IsTherePotentialAvoidLocation()) {
         if (!temp) {
             SetLed(0, 2); /* set led0 to green */
+            NotifyController(3, 1);
             return "AdvancedMotionController";
         }
         SetLed(0, 1); /* set led0 to red */
         if (isBatteryLow) {
             SetLed(0, 3); /* set led0 to orange */
         }
+        NotifyController(3, 0);
         return "SafeMotionController";
     }
 
@@ -176,7 +178,7 @@ machine MotionPrimitives {
     state Run {
         rtamodule {
             controller SafeMotionController period 50 ms;
-            controller AdvancedMotionController period 10 ms;
+            controller AdvancedMotionController period 50 ms;
             decisionmodule DM @ {SafeMotionController: 1,
                                  AdvancedMotionController: 1};
         }

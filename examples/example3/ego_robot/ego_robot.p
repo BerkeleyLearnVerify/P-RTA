@@ -28,7 +28,8 @@ fun InitMonitorGlobalLowerBound(len: int, threshold: float): int;
 fun UpdateMonitor(id: int, value: float): int;
 fun CheckMonitor(id: int): bool;
 fun PrintControllerExecution(id: int): bool;
-fun PrintTime(): bool;
+fun PrintTime(id: int): bool;
+fun NotifyController(machineId: int, controllerId: int): int;
 
 type locationType = (float, float);
 
@@ -53,7 +54,7 @@ machine EgoRobot {
     fun DM(): string {
         if (currentLocation == goals[currentGoalIndex]) {
             if (currentLocation.0 == 1.0 && currentLocation.1 == 1.0) {
-                PrintTime();
+                PrintTime(1);
                 tourCount = tourCount + 1;
             }
             if (currentGoalIndex + 1 < sizeof(goals)) {
@@ -61,8 +62,10 @@ machine EgoRobot {
             } else {
                 currentGoalIndex = 0;
             }
+            NotifyController(0, 0);
             return "SC";
         }
+        NotifyController(0, 1);
         return "AC";
     }
 
@@ -73,7 +76,7 @@ machine EgoRobot {
     fun SC() {
         if (tourCount > 1) {
             send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, (0.0, 0.0), false);
-            goto WaitB0Press;
+            goto Wait;
         } else {
             send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, goals[currentGoalIndex], false);
         }
@@ -99,20 +102,16 @@ machine EgoRobot {
             goals += (sizeof(goals), (1.0, -1.0));
             currentGoalIndex = 0;
             tourCount = 0;
-            goto WaitB0Press;
+            send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, goals[currentGoalIndex], false);
+            PrintTime(0);
+            goto Run;
         }
     }
 
-    state WaitB0Press {
-        entry {
-            var isButtonB0PressedAndReleased: bool;
-            isButtonB0PressedAndReleased = GetIsButtonPressedAndReleasedB0();
-            if (isButtonB0PressedAndReleased) {
-                send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, goals[currentGoalIndex], false);
-                goto Run;
-            } else {
-                goto WaitB0Press;
-            }
+    state Wait {
+        on eCurrentLocation do (payload: locationType) {
+            PrintTime(2);
+            raise halt;
         }
     }
 

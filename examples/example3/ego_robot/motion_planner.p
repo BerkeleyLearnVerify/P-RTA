@@ -9,9 +9,11 @@ machine MotionPlanner {
     fun DM(): string {
         var temp: bool;
         temp = IsThereAvoidLocationInSegment(currentLocation.0, currentLocation.1, goalLocation.0, goalLocation.1);
-        if (!temp) {
+        if (true) { // In this case study, we assume that the environment is safe.
+            NotifyController(2, 1);
             return "AC";
         }
+        NotifyController(2, 0);
         return "SC";
     }
 

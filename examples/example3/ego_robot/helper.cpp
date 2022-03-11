@@ -17,6 +17,7 @@
 #include "helper.hpp"
 
 #include "monitor.hpp"
+#include "socket.hpp"
 
 #include <time.h>
 
@@ -79,6 +80,9 @@ double charger_x = 0.0;
 double charger_y = 0.0;
 double charger_z = 0.0;
 
+machine_t machine;
+int count = 0;
+
 int currentControllers[4] = {0, 0, 0, 0};
 
 float prev_position_difference = 0.0;
@@ -140,7 +144,7 @@ public:
     is_cliff_left(false), is_cliff_center(false), is_cliff_right(false)
   {
 
-    //openConnection();
+    openConnection();
     kobuki::Parameters parameters;
     parameters.sigslots_namespace = "/kobuki";
     parameters.device_port = device;
@@ -204,6 +208,17 @@ public:
       is_geofence_violated = false;
     } else {
       is_geofence_violated = true;
+    }
+    if (count == 10) {
+      kobuki_t pos;
+      pos.x = x_position;
+      pos.y = z_position;
+      pos.angle = orientation;
+      sendKobukiPosition(pos);
+      count = 0;
+      // std::cout << "Pos Sent!" << std::endl;
+    } else {
+      count++;
     }
   }
 
@@ -990,8 +1005,29 @@ PRT_VALUE* P_PrintControllerExecution_IMPL(PRT_MACHINEINST* context, PRT_VALUE**
 }
 
 PRT_VALUE* P_PrintTime_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
-  std::cout << "Time: " << std::time(0) << std::endl;
-  // std::cout << "Monitor returned: " << returnValue << std::endl;
+  int id = PrtPrimGetInt(*argRefs[0]);
+  if (id == 0) {
+    std::cout << "Start Time: " << std::time(0) << std::endl;
+  } else if (id == 1) {
+    std::cout << "Lap Time: " << std::time(0) << std::endl;
+  } else {
+    std::cout << "End Time: " << std::time(0) << std::endl;
+  }
   return PrtMkBoolValue((PRT_BOOLEAN)true);
 }
 
+PRT_VALUE* P_NotifyController_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs) {
+  int machineId = PrtPrimGetInt(*argRefs[0]);
+  int controllerId = PrtPrimGetInt(*argRefs[1]);
+  if (currentControllers[machineId] != controllerId) {
+    switch (machineId) {
+      case 0: machine.robot = (controller) controllerId; break;
+      case 1: machine.repair = (controller) controllerId; break;
+      case 2: machine.motion_planner = (controller) controllerId; break;
+      case 3: machine.motion_primitives = (controller) controllerId; break;
+    }
+    currentControllers[machineId] = controllerId;
+    sendMachine(machine);
+  }
+  return PrtMkIntValue((PRT_UINT32)1);
+}

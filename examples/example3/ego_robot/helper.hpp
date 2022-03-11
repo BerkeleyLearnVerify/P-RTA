@@ -55,4 +55,4 @@ extern "C" PRT_VALUE* P_PrintControllerExecution_IMPL(PRT_MACHINEINST* context, 
 
 extern "C" PRT_VALUE* P_PrintTime_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs);
 
-
+extern "C" PRT_VALUE* P_NotifyController_IMPL(PRT_MACHINEINST* context, PRT_VALUE*** argRefs);
