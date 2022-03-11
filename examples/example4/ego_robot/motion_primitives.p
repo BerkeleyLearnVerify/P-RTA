@@ -72,6 +72,7 @@ machine MotionPrimitives {
         isBumperReleasedCenter = GetIsBumperReleasedCenter();
         isBumperReleasedRight = GetIsBumperReleasedRight();
         isGeoFenceViolated = GetIsGeoFenceViolated();
+        PrintControllerExecution(2);
         if (!isAvoidLocationSent && (!isBumperReleasedLeft || !isBumperReleasedCenter || !isBumperReleasedRight)) {
             isAvoidLocationSent = true;
             shouldKeepCurrentMotion = RegisterPotentialAvoidLocation(currentMotion.0, currentMotion.1);
@@ -143,7 +144,8 @@ machine MotionPrimitives {
         var forwardSpeed: float;
         var rotationSpeed: float;
         forwardSpeed = 0.1;
-        rotationSpeed = 0.4;
+        rotationSpeed = 0.2;
+        PrintControllerExecution(0);
         if (currentHighPriorityMotionsIndex < sizeof(highPriorityMotions)) {
             currentMotion = highPriorityMotions[currentHighPriorityMotionsIndex];
             if (!RotateTowardsLocation(currentMotion.0, currentMotion.1, rotationSpeed)) {
@@ -192,6 +194,7 @@ machine MotionPrimitives {
     fun AdvancedMotionController() {
         var speedMultiplier: float;
         speedMultiplier = 2.0;
+        PrintControllerExecution(1);
         if (currentHighPriorityMotionsIndex < sizeof(highPriorityMotions)) {
             currentMotion = highPriorityMotions[currentHighPriorityMotionsIndex];
             StepPID(currentMotion.0, currentMotion.1);

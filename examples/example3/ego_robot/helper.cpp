@@ -998,7 +998,7 @@ PRT_VALUE* P_PrintControllerExecution_IMPL(PRT_MACHINEINST* context, PRT_VALUE**
   if (id == 0) {
     std::cout << "TC," << x_position << "," << z_position << std::endl;
   } else {
-    std::cout << "UT," << x_position << "," << z_position << std::endl;
+    std::cout << "UC," << x_position << "," << z_position << std::endl;
   }
   // std::cout << "Monitor returned: " << returnValue << std::endl;
   return PrtMkBoolValue((PRT_BOOLEAN)true);

@@ -30,6 +30,8 @@ fun InitMonitorGlobalLowerBound(len: int, threshold: float): int;
 fun UpdateMonitor(id: int, value: float): int;
 fun CheckMonitor(id: int): bool;
 fun NotifyController(machineId: int, controllerId: int): int;
+fun PrintTime(id: int): bool;
+fun PrintControllerExecution(id: int): bool;
 
 type locationType = (float, float);
 
@@ -45,16 +47,21 @@ event eCurrentGoal priority 10: locationType;
 machine EgoRobot {
     var motionPlanner: machine;
     var motionPrimitives: machine;
-    var battery: machine;
+    //var battery: machine;
     var currentLocation: locationType;
     var goals: seq[locationType];
     var currentGoalIndex: int;
     var temp: seq[float];
     var chargerLocation: locationType;
     var geoFencedLocations: seq[locationType];
+    var tourCount: int;
 
     fun DM(): string {
         if (currentLocation == goals[currentGoalIndex]) {
+            if (currentLocation.0 == 1.0 && currentLocation.1 == 1.0) {
+                PrintTime(1);
+                tourCount = tourCount + 1;
+            }
             if (currentGoalIndex + 1 < sizeof(goals)) {
                 currentGoalIndex = currentGoalIndex + 1;
             } else {
@@ -72,7 +79,12 @@ machine EgoRobot {
     }
 
     fun SC() {
-        send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, goals[currentGoalIndex], false);
+        if (tourCount > 2) {
+            send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, (0.0, 0.0), false);
+            goto Wait;
+        } else {
+            send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, goals[currentGoalIndex], false);
+        }
     }
 
     fun handler(payload: locationType) {
@@ -89,26 +101,23 @@ machine EgoRobot {
             geoFencedLocations += (sizeof(geoFencedLocations), (1.0, 0.0));
             motionPlanner = new MotionPlanner(geoFencedLocations);
             motionPrimitives = new MotionPrimitives(this, motionPlanner, currentLocation, 0.2, 300.0);
-            battery = new Battery(motionPrimitives, motionPlanner, chargerLocation, 50.0, 100.0);
+            //battery = new Battery(motionPrimitives, motionPlanner, chargerLocation, 50.0, 100.0);
             goals += (sizeof(goals), (1.0, 1.0));
             goals += (sizeof(goals), (-1.0, 1.0));
             goals += (sizeof(goals), (-1.0, -1.0));
             goals += (sizeof(goals), (1.0, -1.0));
             currentGoalIndex = 0;
-            goto WaitB0Press;
+            tourCount = 0;
+            send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, goals[currentGoalIndex], false);
+            PrintTime(0);
+            goto Run;
         }
     }
 
-    state WaitB0Press {
-        entry {
-            var isButtonB0PressedAndReleased: bool;
-            isButtonB0PressedAndReleased = GetIsButtonPressedAndReleasedB0();
-            if (isButtonB0PressedAndReleased) {
-                send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, goals[currentGoalIndex], false);
-                goto Run;
-            } else {
-                goto WaitB0Press;
-            }
+    state Wait {
+        on eCurrentLocation do (payload: locationType) {
+            PrintTime(2);
+            raise halt;
         }
     }
 
