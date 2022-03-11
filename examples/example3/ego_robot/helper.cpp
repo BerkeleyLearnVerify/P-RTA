@@ -83,7 +83,7 @@ double charger_z = 0.0;
 machine_t machine;
 int count = 0;
 
-int currentControllers[4] = {0, 0, 0, 0};
+int currentControllers[4] = {-1, -1, -1, -1};
 
 float prev_position_difference = 0.0;
 float prev_angle_difference = 0.0;

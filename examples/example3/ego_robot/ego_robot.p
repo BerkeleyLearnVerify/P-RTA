@@ -74,7 +74,7 @@ machine EgoRobot {
     }
 
     fun SC() {
-        if (tourCount > 10) {
+        if (tourCount > 3) {
             send motionPlanner, eMotionRequest, (motionPrimitives, currentLocation, (0.0, 0.0), false);
             goto Wait;
         } else {

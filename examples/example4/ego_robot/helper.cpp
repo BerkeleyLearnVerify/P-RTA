@@ -83,7 +83,7 @@ double charger_z = 0.0;
 bool firstTourIsCompleted = false;
 
 machine_t machine;
-int currentControllers[4] = {0, 0, 0, 0};
+int currentControllers[4] = {-1, -1, -1, -1};
 
 
 // ASSUMPTION: WE COMPLETE THE FIRST TOUR BEFORE BATTERY DRAINS!!!!
