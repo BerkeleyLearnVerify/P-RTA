@@ -1,7 +1,0 @@
-[submodule "P"]
-	path = P
-	url = https://github.com/beyazit-yalcinkaya/P
-	branch = p-rta
-[submodule "reelay"]
-	path = reelay
-	url = https://github.com/doganulus/reelay
