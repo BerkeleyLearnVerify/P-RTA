@@ -42,11 +42,11 @@ Then open the world file `examples/example1/example1.wbt` in the Webots simulato
 
 ### 2. Case Study: A More Complex Robot Surveillance System
 
-Compile the ULGEN program for slave robots.
+Compile the ULGEN program for secondary robots.
 
 ```
-cd examples/example2/controllers/slave
-pc -generate:C slave.p
+cd examples/example2/controllers/secondary
+pc -generate:C secondary.p
 cmake CMakeLists.txt
 make
 ```
